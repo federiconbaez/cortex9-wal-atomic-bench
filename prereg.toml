@@ -1,0 +1,49 @@
+# Pre-registration for cortex9-wal-atomic-bench.
+# Committed and pushed to the public repository BEFORE any measurement.
+# The measurement binary compiles this file in; changing it after the push
+# is a protocol deviation and must be reported as such.
+
+[tree]
+page_bytes = 16384
+key_bytes = 8
+value_bytes = 100
+# Leaf fill after the bulk load (Postgres B-tree default fillfactor 90).
+leaf_fill = 0.9
+
+[bytes]
+# WAL bytes per transaction, full page images (FPI) on vs off (atomic page
+# writes). One transaction = one random update of an existing key.
+keys = 1000000
+transactions = 300000
+# Checkpoint intervals, in transactions. Primary interval: 10000.
+checkpoint_small = 1000
+checkpoint_primary = 10000
+checkpoint_large = 100000
+runs = 5
+runs_seed_start = 0
+bootstrap_resamples = 10000
+# FPIs omit the free-space hole of the page (as Postgres does); no
+# compression.
+fpi_hole_elimination = 1
+
+[crash]
+crashes_per_mode = 10000
+seeds_start = 0
+initial_keys = 5000
+ops_per_trial = 2000
+insert_fraction = 0.3
+checkpoint_every_ops = 300
+# Non-atomic page write: the page is written in 4096-byte units, each
+# persisted independently with this probability when the crash hits it.
+tear_unit_bytes = 4096
+tear_unit_persist_p = 0.5
+
+[thresholds]
+# Primary: WAL bytes/tx reduction of atomic mode vs FPI at the primary
+# checkpoint interval (mean over runs, bootstrap 95% CI lower bound).
+wal_bytes_reduction_min = 0.40
+# Torn pages left after recovery in 10k crashes.
+fpi_torn_pages_max = 0
+atomic_emulated_torn_pages_max = 0
+# Positive control (FPI off, non-atomic writes) must find torn pages.
+control_torn_pages_min = 1
